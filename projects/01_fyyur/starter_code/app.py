@@ -258,7 +258,7 @@ def create_venue_submission():
     # TODO: modify data to be the data object returned from db insertion
     try:
       name = request.form['name']
-      city = request.form['cityy']
+      city = request.form['city']
       state = request.form['state']
       address = request.form['address']
       phone = request.form['phone']
@@ -266,7 +266,6 @@ def create_venue_submission():
       genres = request.form.getlist('genres')
       facebook_link = request.form['facebook_link']
       website_link = request.form['website_link']
-      flash('Name1: ' + website_link)
       # I got the idea on how to implement seeking_talent in this Udacity Knowledge post:
       # https://knowledge.udacity.com/questions/75010
       if ('seeking_talent' in request.form):
@@ -274,17 +273,13 @@ def create_venue_submission():
       else:
         seeking_talent = False
       seeking_description = request.form['seeking_description']
-      flash('Name: ' + seeking_description)
       
       venue = Venue(name=name, city=city, state=state, address=address,
       phone=phone, image_link=image_link, genres=genres, 
       facebook_link=facebook_link, website_link=website_link,
       seeking_talent=seeking_talent, seeking_description=seeking_description)
-      flash('Venue: ' + venue.name)
-      #data2 = Venue(name='Test')
 
       db.session.add(venue)
-      flash('Session add: ' + venue.name)
       db.session.commit()
 
     except:
@@ -498,12 +493,62 @@ def create_artist_submission():
   # called upon submitting the new artist listing form
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
+  
+  error = False
+  form = ArtistForm(request.form, meta={'csrf': False})
 
-  # on successful db insert, flash success
-  flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
-  return render_template('pages/home.html')
+  if form.validate_on_submit():
+
+    try:
+      name = request.form['name']
+      city = request.form['city']
+      state = request.form['state']
+      phone = request.form['phone']
+      image_link = request.form['image_link']
+      genres = request.form.getlist('genres')
+      facebook_link = request.form['facebook_link']
+      website_link = request.form['website_link']
+
+      if ('seeking_venue' in request.form):
+        seeking_venue = (request.form['seeking_venue']=='y')
+      else:
+        seeking_venue = False
+
+      seeking_description = request.form['seeking_description']
+      
+      artist = Artist(name=name, city=city, state=state,
+      phone=phone, image_link=image_link, genres=genres, 
+      facebook_link=facebook_link, website_link=website_link,
+      seeking_venue=seeking_venue, seeking_description=seeking_description)
+
+      db.session.add(artist)
+      db.session.commit()
+
+    except:
+      error = True
+      #flash(sys.exc_info())
+      db.session.rollback()
+    
+    finally:
+      db.session.close()
+      
+    if not error:
+      # on successful db insert, flash success
+      flash('Artist ' + request.form['name'] + ' was successfully listed!')
+
+    if error: 
+      # TODO: on unsuccessful db insert, flash an error instead.
+      # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+      flash('An error occurred. Artist ' + request.form['name'] + ' could not be created')
+
+    return render_template('pages/home.html')
+
+  else:
+    flash('You have Errors: ')
+    for field, err in form.errors.items():
+      flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
+    return render_template('forms/new_artist.html', form=form)
+
 
 
 #  Shows

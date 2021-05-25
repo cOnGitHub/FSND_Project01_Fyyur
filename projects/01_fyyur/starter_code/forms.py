@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL, ValidationError
+from wtforms.validators import DataRequired, AnyOf, URL, ValidationError, Optional
 
 def phone_check(form, field):
     regex = re.compile('[0-9]{3}\-[0-9]{3}\-[0-9]{4}')
@@ -122,10 +122,10 @@ class VenueForm(Form):
         ]
     )
     facebook_link = StringField(
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[Optional(), URL()]
     )
     website_link = StringField(
-        'website_link', validators=[URL()]
+        'website_link', validators=[Optional(), URL()]
     )
 
     seeking_talent = BooleanField( 
@@ -234,11 +234,11 @@ class ArtistForm(Form):
      )
     facebook_link = StringField(
         # TODO implement enum restriction
-        'facebook_link', validators=[URL()]
+        'facebook_link', validators=[Optional(), URL()]
      )
 
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[Optional(), URL()]
      )
 
     seeking_venue = BooleanField( 'seeking_venue' )
