@@ -1,7 +1,15 @@
+import re
 from datetime import datetime
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, ValidationError
+
+def phone_check(form, field):
+    regex = re.compile('[0-9]{3}\-[0-9]{3}\-[0-9]{4}')
+    match = regex.match(str(field.data))
+    if not bool(match):
+        raise ValidationError('Phone is not of proper form xxx-xxx-xxxx')
+
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -83,7 +91,7 @@ class VenueForm(Form):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone', validators=[phone_check]
     )
     image_link = StringField(
         'image_link'
@@ -117,10 +125,12 @@ class VenueForm(Form):
         'facebook_link', validators=[URL()]
     )
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[URL()]
     )
 
-    seeking_talent = BooleanField( 'seeking_talent' )
+    seeking_talent = BooleanField( 
+        'seeking_talent' 
+    )
 
     seeking_description = StringField(
         'seeking_description'
@@ -193,7 +203,7 @@ class ArtistForm(Form):
     )
     phone = StringField(
         # TODO implement validation logic for state
-        'phone'
+        'phone', validators=[phone_check]
     )
     image_link = StringField(
         'image_link'

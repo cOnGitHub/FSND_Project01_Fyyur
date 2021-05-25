@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -13,6 +13,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
+import sys
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -32,7 +33,7 @@ SQLALCHEMY_DATABASE_URI = app.config['SQLALCHEMY_DATABASE_URI'] #'postgresql://p
 #----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-  __tablename__ = 'Venue'
+  __tablename__ = 'venues'
 
   id = db.Column(db.Integer, primary_key=True)
   name = db.Column(db.String, nullable=False)
@@ -55,7 +56,7 @@ class Venue(db.Model):
 
 
 class Artist(db.Model):
-  __tablename__ = 'Artist'
+  __tablename__ = 'artists'
 
   id = db.Column(db.Integer, primary_key=True)
   name = db.Column(db.String, nullable=False)
@@ -78,11 +79,11 @@ class Artist(db.Model):
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 class Show(db.Model):
-  __tablename__ = 'Show'
+  __tablename__ = 'shows'
 
   id = db.Column(db.Integer, primary_key=True)
-  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+  artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
+  venue_id = db.Column(db.Integer, db.ForeignKey('venues.id'), nullable=False)
   start_time = db.Column(db.DateTime, nullable=False)
 
 #----------------------------------------------------------------------------#
@@ -247,15 +248,69 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
+  error = False
+  # I used the information about the CSRF token from this Udacity Knowledge Post:
+  # https://knowledge.udacity.com/questions/536070 
+  form = VenueForm(request.form, meta={'csrf': False})
 
-  # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  if form.validate_on_submit():
+    # TODO: insert form data as a new Venue record in the db, instead
+    # TODO: modify data to be the data object returned from db insertion
+    try:
+      name = request.form['name']
+      city = request.form['cityy']
+      state = request.form['state']
+      address = request.form['address']
+      phone = request.form['phone']
+      image_link = request.form['image_link']
+      genres = request.form.getlist('genres')
+      facebook_link = request.form['facebook_link']
+      website_link = request.form['website_link']
+      flash('Name1: ' + website_link)
+      # I got the idea on how to implement seeking_talent in this Udacity Knowledge post:
+      # https://knowledge.udacity.com/questions/75010
+      if ('seeking_talent' in request.form):
+        seeking_talent = (request.form['seeking_talent']=='y')
+      else:
+        seeking_talent = False
+      seeking_description = request.form['seeking_description']
+      flash('Name: ' + seeking_description)
+      
+      venue = Venue(name=name, city=city, state=state, address=address,
+      phone=phone, image_link=image_link, genres=genres, 
+      facebook_link=facebook_link, website_link=website_link,
+      seeking_talent=seeking_talent, seeking_description=seeking_description)
+      flash('Venue: ' + venue.name)
+      #data2 = Venue(name='Test')
+
+      db.session.add(venue)
+      flash('Session add: ' + venue.name)
+      db.session.commit()
+
+    except:
+      error = True
+      #flash(sys.exc_info())
+      db.session.rollback()
+    
+    finally:
+      db.session.close()
+      
+    if not error:
+      # on successful db insert, flash success
+      flash('Venue ' + request.form['name'] + ' was successfully listed!')
+
+    if error: 
+      # TODO: on unsuccessful db insert, flash an error instead.
+      # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+      # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+      flash('An error occurred. Venue ' + request.form['name'] + ' could not be created')
+
+    return render_template('pages/home.html')
+  else:
+    flash('You have Errors: ')
+    for field, err in form.errors.items():
+      flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
+    return render_template('forms/new_venue.html', form=form)
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
