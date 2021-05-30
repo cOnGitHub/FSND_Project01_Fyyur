@@ -14,6 +14,7 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 import sys
+import numpy as np
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -116,28 +117,61 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  return render_template('pages/venues.html', areas=data)
+  
+  data = []
+
+  try:
+    city_states = db.session.query(Venue.city, Venue.state).all()
+    # See here on how to get unique tuples:
+    # https://stackoverflow.com/questions/35975441/grab-unique-tuples-in-python-list-irrespective-of-order
+    city_states = np.unique(city_states, axis=0)
+    #flash(type(city_states))
+
+    for city, state in city_states:
+      city_state = {}
+      city_state['city'] = city
+      city_state['state'] = state
+
+      city_state_venues = []
+
+      for v in Venue.query.filter_by(city=city, state=state).all():
+        venue_dict = {}
+        venue_dict['id'] = v.id
+        venue_dict['name'] = v.name
+        venue_dict['num_upcoming_shows'] = Show.query.filter_by(venue_id=v.id).filter(Show.start_time < datetime.now()).count()
+        city_state_venues.append(venue_dict)
+
+      city_state['venues'] = city_state_venues
+      data.append(city_state)
+    
+    flash(data)
+    return render_template('pages/venues.html', areas=data)
+
+  except:
+    return render_template('errors/500.html')
+
+  # data=[{
+  #   "city": "San Francisco",
+  #   "state": "CA",
+  #   "venues": [{
+  #     "id": 1,
+  #     "name": "The Musical Hop",
+  #     "num_upcoming_shows": 0,
+  #   }, {
+  #     "id": 3,
+  #     "name": "Park Square Live Music & Coffee",
+  #     "num_upcoming_shows": 1,
+  #   }]
+  # }, {
+  #   "city": "New York",
+  #   "state": "NY",
+  #   "venues": [{
+  #     "id": 2,
+  #     "name": "The Dueling Pianos Bar",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }]
+  # return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -193,7 +227,6 @@ def show_venue(venue_id):
     return render_template('pages/show_venue.html', venue=data)
   
   except:
-    error = True
     return render_template('errors/500.html')
 
 
