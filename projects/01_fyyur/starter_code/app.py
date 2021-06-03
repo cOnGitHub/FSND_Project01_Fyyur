@@ -247,7 +247,6 @@ def show_venue(venue_id):
   except:
     return render_template('errors/500.html')
 
-
   #flash(data)
 
   # data1={
@@ -950,7 +949,6 @@ def create_show_submission():
     for field, err in form.errors.items():
       flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
     return render_template('forms/new_show.html', form=form)
-
 
 
 @app.errorhandler(404)
