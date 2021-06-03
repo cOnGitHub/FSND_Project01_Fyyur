@@ -15,7 +15,7 @@ from forms import *
 from flask_migrate import Migrate
 import sys
 import numpy as np
-from models import Venue, Artist, Show
+from models import Venue, Artist, Show, db
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -24,7 +24,9 @@ from models import Venue, Artist, Show
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+# I found this Udacity knowledge article helpful on migrating models to models.py
+# https://knowledge.udacity.com/questions/282547
+db.init_app(app) #SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 # TODO: connect to a local postgresql database
@@ -596,7 +598,8 @@ def edit_artist_submission(artist_id):
       a.image_link = request.form['image_link']
       a.genres = request.form.getlist('genres')
       a.facebook_link = request.form['facebook_link']
-      a.website_link = request.form['website_link']
+      a.website_link = form.website_link.data#request.form['website_link']
+      flash(a.website_link)
 
       if ('seeking_venue' in request.form):
         a.seeking_venue = (request.form['seeking_venue']=='y')
