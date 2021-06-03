@@ -683,7 +683,6 @@ def edit_artist_submission(artist_id):
     for field, err in form.errors.items():
       flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
     return render_template('forms/edit_artist.html', form=form, artist=a)
-#    return redirect(url_for('show_artist', artist_id=artist_id))
             
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
@@ -716,7 +715,60 @@ def edit_venue(venue_id):
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
-  return redirect(url_for('show_venue', venue_id=venue_id))
+
+  error = False
+  form = VenueForm(request.form, meta={'csrf': False})
+  v = Venue.query.get(venue_id)
+
+  if form.validate_on_submit():
+    # TODO: insert form data as a new Venue record in the db, instead
+    # TODO: modify data to be the data object returned from db insertion
+    try:
+      v.name = request.form['name']
+      v.city = request.form['city']
+      v.state = request.form['state']
+      v.address = request.form['address']
+      v.phone = request.form['phone']
+      v.image_link = request.form['image_link']
+      v.genres = request.form.getlist('genres')
+      v.facebook_link = request.form['facebook_link']
+      v.website_link = request.form['website_link']
+      # I got the idea on how to implement seeking_talent in this Udacity Knowledge post:
+      # https://knowledge.udacity.com/questions/75010
+      if ('seeking_talent' in request.form):
+        v.seeking_talent = (request.form['seeking_talent']=='y')
+      else:
+        v.seeking_talent = False
+      v.seeking_description = request.form['seeking_description']
+      
+      db.session.commit()
+
+    except:
+      error = True
+      #flash(sys.exc_info())
+      db.session.rollback()
+    
+    finally:
+      db.session.close()
+      
+    if not error:
+      # on successful db insert, flash success
+      flash('Venue ' + request.form['name'] + ' was successfully updated!')
+
+    if error: 
+      # TODO: on unsuccessful db insert, flash an error instead.
+      # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+      # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+      flash('An error occurred. Venue ' + request.form['name'] + ' could not be updated')
+
+    return redirect(url_for('show_venue', venue_id=venue_id))
+
+  else:
+    flash('You have Errors: ')
+    for field, err in form.errors.items():
+      flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
+    return render_template('forms/edit_venue.html', form=form, venue=v)
+
 
 #  Create Artist
 #  ----------------------------------------------------------------
@@ -786,8 +838,6 @@ def create_artist_submission():
     for field, err in form.errors.items():
       flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
     return render_template('forms/new_artist.html', form=form)
-
-
 
 #  Shows
 #  ----------------------------------------------------------------
