@@ -633,7 +633,58 @@ def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
 
-  return redirect(url_for('show_artist', artist_id=artist_id))
+  error = False
+  form = ArtistForm(request.form, meta={'csrf': False})
+  a = Artist.query.get(artist_id)
+
+
+  if form.validate_on_submit():
+
+    try:
+      a.name = request.form['name']
+      a.city = request.form['city']
+      a.state = request.form['state']
+      a.phone = request.form['phone']
+      a.image_link = request.form['image_link']
+      a.genres = request.form.getlist('genres')
+      a.facebook_link = request.form['facebook_link']
+      a.website_link = request.form['website_link']
+
+      if ('seeking_venue' in request.form):
+        a.seeking_venue = (request.form['seeking_venue']=='y')
+      else:
+        a.seeking_venue = False
+
+      a.seeking_description = request.form['seeking_description']
+      
+      db.session.commit()
+
+    except:
+      error = True
+      #flash(sys.exc_info())
+      db.session.rollback()
+    
+    finally:
+      db.session.close()
+      
+    if not error:
+      # on successful db insert, flash success
+      flash('Artist ' + request.form['name'] + ' was successfully updated!')
+
+    if error: 
+      # TODO: on unsuccessful db insert, flash an error instead.
+      # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+      flash('An error occurred. Artist ' + request.form['name'] + ' could not be updated')
+
+    return redirect(url_for('show_artist', artist_id=artist_id))
+
+  else:
+    flash('You have Errors: ')
+    for field, err in form.errors.items():
+      flash(''.join(field).replace('_', ' ').title() + ' : \'' + ''.join(err) + '\'' )
+    return render_template('forms/edit_artist.html', form=form, artist=a)
+#    return redirect(url_for('show_artist', artist_id=artist_id))
+            
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
@@ -642,7 +693,7 @@ def edit_venue(venue_id):
   form = VenueForm(obj=result)
 
   venue = {col.name: getattr(result, col.name) for col in result.__table__.columns}
-  flash(venue)
+  #flash(venue)
 
   # venue={
   #   "id": 1,
