@@ -144,7 +144,7 @@ def venues():
       city_state['venues'] = city_state_venues
       data.append(city_state)
     
-    flash(data)
+    #flash(data)
     return render_template('pages/venues.html', areas=data)
 
   except:
@@ -458,14 +458,31 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
-  }
+  response = {}
+  search_term = request.form.get('search_term')
+
+  search_results = Artist.query.filter(Artist.name.ilike('%' + search_term + '%')).all()
+
+  response['count'] = len(search_results)
+  response['data'] = []
+
+  for result in search_results:
+    artist = {}
+    artist['id'] = result.id
+    artist['name'] = result.name
+    artist['num_upcoming_shows'] = Show.query.filter_by(artist_id=result.id).filter(Show.start_time > datetime.now()).count()
+    response['data'].append(artist)
+  
+  #flash(response)
+  
+  # response={
+  #   "count": 1,
+  #   "data": [{
+  #     "id": 4,
+  #     "name": "Guns N Petals",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
