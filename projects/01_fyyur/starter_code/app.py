@@ -598,8 +598,8 @@ def edit_artist_submission(artist_id):
       a.image_link = request.form['image_link']
       a.genres = request.form.getlist('genres')
       a.facebook_link = request.form['facebook_link']
-      a.website_link = form.website_link.data#request.form['website_link']
-      flash(a.website_link)
+      a.website_link = request.form['website_link']
+      #flash(a.website_link)
 
       if ('seeking_venue' in request.form):
         a.seeking_venue = (request.form['seeking_venue']=='y')
